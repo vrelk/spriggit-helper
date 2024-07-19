@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.9.34728.123
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spriggit Helper", "Spriggit Helper.csproj", "{044C3F3A-1738-44DE-AFD7-D4ED58F000CE}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{044C3F3A-1738-44DE-AFD7-D4ED58F000CE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{044C3F3A-1738-44DE-AFD7-D4ED58F000CE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{044C3F3A-1738-44DE-AFD7-D4ED58F000CE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{044C3F3A-1738-44DE-AFD7-D4ED58F000CE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {56F1AE60-C65B-477F-8CC9-A033F053AD83}
+	EndGlobalSection
+EndGlobal
