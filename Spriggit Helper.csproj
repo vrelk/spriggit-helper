@@ -8,9 +8,16 @@
     <Nullable>enable</Nullable>
     <PublishTrimmed>False</PublishTrimmed>
     <PublishAot>False</PublishAot>
+    <PackageProjectUrl>https://git.vrelk.net:skyrim-mods/YAML-Mod-Serializer</PackageProjectUrl>
+    <PackageIcon></PackageIcon>
+    <Authors>Controller Vrelk</Authors>
+    <Company>Vrelk Industries</Company>
+    <RepositoryUrl>https://git.vrelk.net:skyrim-mods/YAML-Mod-Serializer.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="CommandLineParser" Version="2.9.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="8.0.2" />
     <PackageReference Include="Mutagen.Bethesda.Skyrim" Version="0.44.0" />
   </ItemGroup>

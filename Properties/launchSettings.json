@@ -2,7 +2,7 @@
   "profiles": {
     "Spriggit Helper": {
       "commandName": "Project",
-      "commandLineArgs": "\"E:\\Mod Organizer 2 - Data\\Skyrim SE\\mods\\vrelk_devious_armor\\vrelk_devious_armor.esp\""
+      "commandLineArgs": "-s \"E:\\Mod Organizer 2 - Data\\Skyrim SE\\mods\\vrelk_devious_armor\\vrelk_devious_armor.esp\""
     }
   }
 }

@@ -10,27 +10,42 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Diagnostics;
 using System;
+using CommandLine;
 
 namespace Spriggit_Helper
 {
+    public class Options
+    {
+        [Option('s', "source", Required = true, HelpText = "Full path to the source .esp/.esm/.esl file.")]
+        public string SourceFile { get; set; }
+
+        [Option("localOnly", Default = false, HelpText = "Use the current directory as the only source for masters.")]
+        public bool CurrentDirOnly { get; set; }
+    }
+
     internal class Program
     {
         static void Main(string[] args)
         {
-            if (args.Length == 0)
+            var result = Parser.Default.ParseArguments<Options>(args);
+
+            if(result.Errors.Count() > 0)
             {
-                Console.Error.WriteLine("No file specified.");
+                Console.WriteLine("Exited with errors!\nPress enter to close this window.");
                 Console.ReadKey();
                 return;
             }
-            else if (!args[0].EndsWith(".esp") && !args[0].EndsWith(".esm") && !args[0].EndsWith(".esl"))
+
+            Options config = result.Value;
+
+            if (!config.SourceFile.EndsWith(".esp") && !config.SourceFile.EndsWith(".esm") && !config.SourceFile.EndsWith(".esl"))
             {
-                Console.WriteLine(args[0]);
+                Console.WriteLine(config.SourceFile);
                 Console.Error.WriteLine("Unsupported filetype.");
                 Console.ReadKey();
                 return;
             }
-            else if (!File.Exists(args[0]))
+            else if (!File.Exists(config.SourceFile))
             {
                 Console.Error.WriteLine("Unable to locate file.");
                 Console.ReadKey();
@@ -40,8 +55,8 @@ namespace Spriggit_Helper
             
             ModSettings? modSettings = null;
 
-            var sourcePath = Path.GetDirectoryName(args[0]);
-            var sourceFile = Path.GetFileName(args[0]);
+            var sourcePath = Path.GetDirectoryName(config.SourceFile);
+            var sourceFile = Path.GetFileName(config.SourceFile);
 
             if(File.Exists(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ".spriggit_helper.json")))
             {
@@ -50,7 +65,7 @@ namespace Spriggit_Helper
 
 
             using var env = GameEnvironment.Typical.Skyrim(SkyrimRelease.SkyrimSE);
-            var mod = SkyrimMod.CreateFromBinaryOverlay(args[0], SkyrimRelease.SkyrimSE);
+            var mod = SkyrimMod.CreateFromBinaryOverlay(config.SourceFile, SkyrimRelease.SkyrimSE);
 
             var masters = mod.MasterReferences.Select(x => x.Master.FileName.ToString()).Order();
 
@@ -65,31 +80,34 @@ namespace Spriggit_Helper
                 modSettings.SpriggitPath = selectPath;
             }
 
-            foreach (var master in masters)
+            if (!config.CurrentDirOnly)
             {
-                if(modSettings.MasterLocations.ContainsKey(master))
+                foreach (var master in masters)
                 {
-                    if (File.Exists(modSettings.MasterLocations[master]))
+                    if (modSettings.MasterLocations.ContainsKey(master))
                     {
+                        if (File.Exists(modSettings.MasterLocations[master]))
+                        {
+                            continue;
+                        }
+                    }
+                    else if (File.Exists(Path.Combine(env.DataFolderPath, master)))
+                    {
+                        modSettings.MasterLocations.Add(master, env.DataFolderPath);
                         continue;
                     }
-                }
-                else if(File.Exists(Path.Combine(env.DataFolderPath, master)))
-                {
-                    modSettings.MasterLocations.Add(master, env.DataFolderPath);
-                    continue;
-                }
-                else
-                {
-                    var selectPath = ShowDialog(master);
-                    if (String.IsNullOrEmpty(selectPath))
-                        return;
-
-                    if(!modSettings.MasterLocations.ContainsKey(master))
-                        modSettings.MasterLocations.Add(master, Path.GetDirectoryName(selectPath) ?? "./");
                     else
-                        modSettings.MasterLocations[master] = Path.GetDirectoryName(selectPath) ?? "./";
-                    continue;
+                    {
+                        var selectPath = ShowDialog(master);
+                        if (String.IsNullOrEmpty(selectPath))
+                            return;
+
+                        if (!modSettings.MasterLocations.ContainsKey(master))
+                            modSettings.MasterLocations.Add(master, Path.GetDirectoryName(selectPath) ?? "./");
+                        else
+                            modSettings.MasterLocations[master] = Path.GetDirectoryName(selectPath) ?? "./";
+                        continue;
+                    }
                 }
             }
 
@@ -100,19 +118,25 @@ namespace Spriggit_Helper
             //}
             File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ".spriggit_helper.json"), JsonSerializer.Serialize(modSettings, ModSettings.serializerOptions));
 
-            var tempDir = GetTemporaryDirectory();
-            Console.WriteLine("Temporary Directory: " + tempDir);
-
-            foreach(var item in masters)
+            string tempDir = "";
+            if (!config.CurrentDirOnly)
             {
-                File.Copy(Path.Combine(modSettings.MasterLocations[item], item), Path.Combine(tempDir, item), true);
-            }
-            File.Copy(args[0], Path.Combine(tempDir, sourceFile));
+                tempDir = GetTemporaryDirectory();
+                Console.WriteLine("Temporary Directory: " + tempDir);
 
+                foreach (var item in masters)
+                {
+                    File.Copy(Path.Combine(modSettings.MasterLocations[item], item), Path.Combine(tempDir, item), true);
+                }
+                File.Copy(config.SourceFile, Path.Combine(tempDir, sourceFile));
+            }
 
 
             Process process = new Process();
-            process.StartInfo.Arguments = "serialize -i \"" + Path.Combine(tempDir, sourceFile) + "\" -o \"" + Path.Combine(sourcePath, sourceFile) + ".yaml\" -p Spriggit.yaml -g SkyrimSE";
+            if (!config.CurrentDirOnly)
+                process.StartInfo.Arguments = "serialize -i \"" + Path.Combine(tempDir, sourceFile) + "\" -o \"" + Path.Combine(sourcePath, sourceFile) + ".yaml\" -p Spriggit.yaml -g SkyrimSE";
+            else
+                process.StartInfo.Arguments = "serialize -i \"" + config.SourceFile + "\" -o \"" + config.SourceFile + ".yaml\" -p Spriggit.yaml -g SkyrimSE";
             process.StartInfo.FileName = modSettings.SpriggitPath;
             process.StartInfo.UseShellExecute = false;
             process.StartInfo.RedirectStandardError = true;
@@ -127,8 +151,10 @@ namespace Spriggit_Helper
             process.BeginErrorReadLine();
             process.WaitForExit();
 
+
             // hope this isn't too dangerous
-            Directory.Delete(tempDir, true);
+            if (!config.CurrentDirOnly)
+                Directory.Delete(tempDir, true);
 
             Console.WriteLine("\n\n\n\n");
             if(process.ExitCode != 0)
