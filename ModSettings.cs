@@ -11,7 +11,6 @@ namespace Spriggit_Helper
     public class ModSettings
     {
         public static JsonSerializerOptions serializerOptions = new JsonSerializerOptions() { WriteIndented = true };
-
         public Dictionary<string, string> MasterLocations { get; set; } = [];
         public string SpriggitPath { get; set; } = "";
     }

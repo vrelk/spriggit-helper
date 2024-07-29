@@ -14,13 +14,22 @@ using CommandLine;
 
 namespace Spriggit_Helper
 {
+    public enum OutputFormat
+    {
+        json,
+        yaml
+    }
+
     public class Options
     {
         [Option('s', "source", Required = true, HelpText = "Full path to the source .esp/.esm/.esl file.")]
         public string SourceFile { get; set; }
 
-        [Option("localOnly", Default = false, HelpText = "Use the current directory as the only source for masters.")]
+        [Option('l', "localOnly", Default = false, HelpText = "Use the current directory as the only source for masters.")]
         public bool CurrentDirOnly { get; set; }
+
+        [Option('f', "format", Default = OutputFormat.yaml, HelpText = "Output format")]
+        public OutputFormat OutputFormat { get; set; }
     }
 
     internal class Program
@@ -52,6 +61,11 @@ namespace Spriggit_Helper
                 return;
             }
 
+            Console.ForegroundColor = ConsoleColor.Black;
+            Console.BackgroundColor = ConsoleColor.White;
+            Console.Write("Spriggit Helper");
+            Console.WriteLine(new String(' ', Console.WindowWidth - 15));
+            Console.ResetColor();
             
             ModSettings? modSettings = null;
 
@@ -126,17 +140,27 @@ namespace Spriggit_Helper
 
                 foreach (var item in masters)
                 {
+                    Console.WriteLine($"Copying {item} to temp directory.");
                     File.Copy(Path.Combine(modSettings.MasterLocations[item], item), Path.Combine(tempDir, item), true);
                 }
+                Console.WriteLine($"Copying {sourceFile} to temp directory.");
                 File.Copy(config.SourceFile, Path.Combine(tempDir, sourceFile));
             }
+
+            Console.Write("\n\n\n");
 
 
             Process process = new Process();
             if (!config.CurrentDirOnly)
-                process.StartInfo.Arguments = "serialize -i \"" + Path.Combine(tempDir, sourceFile) + "\" -o \"" + Path.Combine(sourcePath, sourceFile) + ".yaml\" -p Spriggit.yaml -g SkyrimSE";
+                if(config.OutputFormat == OutputFormat.yaml)
+                    process.StartInfo.Arguments = "serialize -i \"" + Path.Combine(tempDir, sourceFile) + "\" -o \"" + Path.Combine(sourcePath, sourceFile) + ".yaml\" -p Spriggit.yaml -g SkyrimSE";
+                else
+                    process.StartInfo.Arguments = "serialize -i \"" + Path.Combine(tempDir, sourceFile) + "\" -o \"" + Path.Combine(sourcePath, sourceFile) + ".json\" -p Spriggit.json -g SkyrimSE";
             else
-                process.StartInfo.Arguments = "serialize -i \"" + config.SourceFile + "\" -o \"" + config.SourceFile + ".yaml\" -p Spriggit.yaml -g SkyrimSE";
+                if (config.OutputFormat == OutputFormat.yaml)
+                    process.StartInfo.Arguments = "serialize -i \"" + config.SourceFile + "\" -o \"" + config.SourceFile + ".yaml\" -p Spriggit.yaml -g SkyrimSE";
+                else
+                    process.StartInfo.Arguments = "serialize -i \"" + config.SourceFile + "\" -o \"" + config.SourceFile + ".json\" -p Spriggit.json -g SkyrimSE";
             process.StartInfo.FileName = modSettings.SpriggitPath;
             process.StartInfo.UseShellExecute = false;
             process.StartInfo.RedirectStandardError = true;
@@ -154,9 +178,13 @@ namespace Spriggit_Helper
 
             // hope this isn't too dangerous
             if (!config.CurrentDirOnly)
+            {
+                Console.Write("\n\n\n");
+                Console.WriteLine("Removing temp directory.");
                 Directory.Delete(tempDir, true);
+            }
 
-            Console.WriteLine("\n\n\n\n");
+            Console.Write("\n\n");
             if(process.ExitCode != 0)
             {
                 Console.WriteLine("Exited with errors!\nPress enter to close this window.");
